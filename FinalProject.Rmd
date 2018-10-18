@@ -1,0 +1,166 @@
+---
+title: 'Final_Project'
+author: "Nashrah Ahmed"
+date: "December 6, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(titanic)
+library(plm)
+library(lmtest)
+library(zoo)
+library(dplyr)
+library(moments)
+```
+
+```{r}
+setwd("/Users/Nashrah/Desktop/Columbia_QMSS/Fall 2017 Courses/Data Analysis for the Social Sciences")
+pd = read.csv("panel-for-R.csv")
+
+## http://sda.berkeley.edu/sdaweb/analysis/?dataset=gss06panelw3 ##
+
+vars <- c("idnum", "fund","panelwave","gunlaw","colhomo", "racopen", "colath", "abpoor", "realrinc", "sex")
+pd.sub <- pd[, vars]
+sub <- na.omit(pd.sub)
+
+sub$realrinc_1000s <- (sub$realrinc)/1000 
+sub$abor <- ifelse(sub$abpoor==1, 1, 0) #1 = yes
+sub$homo <- ifelse(sub$colhomo==4, 1, 0) #1 = yes allowed
+sub$rac <- ifelse(sub$racopen==1, 1, 0) #1 = independent decision
+sub$gun <- ifelse(sub$gunlaw==1, 1, 0) #1 = favor 
+sub$cola <- ifelse(sub$colath==4, 1, 0) #1 = yes allowed
+sub$year = ifelse(sub$panelwave==3, 1, 0)
+
+
+sd_colath <- count(sub, "colhomo")
+sd_colath
+sd__colhomo <- median(sub$fund)
+sd__colhomo
+sd_abpoor <- nrow(sub$abpoor)
+sd_gunlaw <- nrow(sub$gunlaw)
+sd_realrinc <- nrow(sub$realrinc_1000s)
+sd_racopen <- nrow(sub$racopen)
+
+sd <- cbind(sd_colath, sd__colhomo, sd_abpoor, sd_gunlaw, sd_racopen, sd_realinc)
+sd1 <- as.data.frame(sd) 
+sd1
+```
+
+```{r}
+median <- tapply(mydata$SAT,mydata$Gender, median)
+max <- tapply(mydata$SAT,mydata$Gender, max)
+cbind(mean, median, sd, max)
+round(cbind(mean, median, sd, max),digits=1)
+t1 <- round(cbind(mean, median, sd, max),digits=1)
+t1
+```
+
+```{r}
+pd$colath
+pd.sub$homo = ifelse(pd.sub$colhomo==4, 1, 2) ## interviewer favors a homosexual teaching a class in a college or univ
+
+##COLATH_1: There are always some people whose ideas are considered bad or dangerous by other people. For instance, somebody who is against all churches and religion . . . B. Should such a person be allowed to teach in a college or university, or not?
+## 4: Allowed to teach & 5 Not Allowed
+
+## COLHOMO_1: And what about a man who admits that he is a homosexual? b.Should such a person be allowed to teach in a college, or university, or not?
+## 4: ALLOWED & 5 NOT ALLOWED
+
+## GUNLAW: Would you favor or oppose a law which would require a person to obtain a police permit before he or she could buy a gun?
+## 1: FAVOR & 2: OPPOSE
+
+## FUND: Fundamentalism/liberalism of respondent's religion.
+## 1: FUNDAMENTALIST & 2 MODERATE & 3 LIBERAL
+
+## RACOPEN: Suppose there is a community-wide vote on the general housing issue. There are two possible laws to vote on: a. One law says that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to (negroes/blacks/African-Americans). b. The second law says that a homeowner cannot refuse to sell to someone because of their race or color. Which law would you vote for?
+## 1: OWNER DECIDES & 2: CANT DISCRIMINATE & 3: NEITHER
+```
+
+```{r}
+vars <- c("idnum", "fund","panelwave","gunlaw","colhomo", "racopen")
+pd.sub <- pd[, vars]
+pd.sub$homo = ifelse(pd.sub$colhomo==4, 1, 2) ## interviewer favors a homosexual teaching a class in a college or univ
+pd.sub$year= ifelse(pd.sub$panelwave==3, 1, 0)
+```
+
+## 1. Run a naive ("pooled") OLS regression on the panel data. Tell we how you expect your Xs to affect your Y and why. Apply clustered standard errors too. Interpret your results.
+```{r}
+sub$realrinc_1000s <- (sub$realrinc)/1000 
+sub$abor <- ifelse(sub$abpoor==1, 1, 0) #1 = yes
+sub$homo <- ifelse(sub$colhomo==4, 1, 0) #1 = yes allowed
+sub$rac <- ifelse(sub$racopen==1, 1, 0) #1 = independent decision
+sub$gun <- ifelse(sub$gunlaw==1, 1, 0) #1 = favor 
+sub$cola <- ifelse(sub$colath==4, 1, 0) #1 = yes allowed
+sub$year = ifelse(sub$panelwave==3, 1, 0)
+sub$gender = ifelse(sub$sex==2, 1, 0)
+#female = 1, male = 2
+sub$sex
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  return(odds)
+}
+
+logit2prob(-.33)
+
+lm1 <- lm(fund ~ homo + cola + gun + rac + abor*gender + realrinc_1000s + as.factor(panelwave),  data = sub)
+
+summary(lm1)
+
+#somebody who is against all churches and religion. Should such a person be allowed to teach in a college or university
+
+# Based on the results from the multivariate naive “pooled” OLS regression above, an individual that beleieves homosexuals should be allowed to teach in a college or university scores .185** higher on the religiousness scale, indicating more moderate/liberal beleiefs. An individual that beleieve somebody who is against all churches and religion should be allowed to teach in a college or university scores .144*** higher on the religiousness scale, indicating more moderate/liberal beleiefs. An individual that favors a law which would require a person to obtain a police permit before he or she could buy a gun scores .085(.) higher on the religiousness scale, indicating more moderate/liberal beleiefs. An individual that would vote for a law says that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to African Americans scores .006 lower on the religiousness scale, indicating more funamentalist beliefs. Lastly, an individual that beleives it should be possible for a pregnant woman to obtain a legal abortion if the family has a very low income and cannot afford any more children scores .321 higher on the religiousness scale, indicating more moderate/liberal beleiefs. The results largely align with expectations and make intuitive sense given the general stance of society over time. 
+
+## Here, I am measuring the relationship between a respondent's level of religiousness (fundamentalist vs moderate vs liberal) and favorability for homosexuals teaching classes, gun laws, and one aspect of discrimination (see detailed descriptions of variables above) via a naive ("pooled") OLS regression on the panel data.
+
+## As an interviewer is more in favor of a homosexual teaching a class in a college or university, an interviewer's score for fundamentalism/liberalism of religion decreases by .35*** percentage points (more moderate/liberal). As an interviewer is more in favor of a law which would require a person to obtain a police permit before he or she could buy a gun, an interviewer's score for fundamentalism/liberalism of religion decreases by .06 percentage points (more moderate/liberal). As an interviewer is more in favor of a law that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to (negroes/blacks/African-Americans), an interviewer's score for fundamentalism/liberalism of religion decreases by .01 percentage points (more moderate/liberal).
+
+```
+
+## Clustered Standard Errors
+```{r}
+
+clusterSE <- function(fit, cluster.var, data){ # note: cluster.var should be entered as character string
+  require(plm); require(lmtest)
+  
+  if (missing(data) & cluster.var %in% colnames(index(fit))){
+    cvar <- index(fit, cluster.var)
+    n <- length(unique(cvar))
+    N <- length(cvar)
+  }
+  else{
+    row.ids <- as.numeric(rownames(model.frame(fit)))
+    # 1. get number of clusters (omitting individuals with missingness on "divorce.easier" and/or "divorced")
+    n <- length(unique(data[row.ids, cluster.var]))
+    # 2. get number of observations (again omitting the same individuals with missingness)
+    N <- length(row.ids) 
+  }
+  
+  #3. compute degrees of freedom
+  df <- (n/(n - 1)) * (N - 1)/fit$df.residual
+  # compute variance-covariance matrix
+  vcov <- df*vcovHC(fit, type = "HC0", cluster = "group")
+  # retest coefficients  
+  coeftest(fit, vcov = vcov)
+}
+
+clusterSE(fit = lm1, cluster.var = "idnum", data=sub)
+
+## Accouting for the clustered standard errors which accounts for the lack of dependence assumed by the naive OLS regression method, the coefficients across the variables remain unchanged. T-values across the variables decline slightly and the "homo" variable remains statistically significant. 
+
+```
+
+## 2. Run a first differences regression on the same model in Question 1. Interpret your results. Do you draw a different conclusion than in Question 1? Explain.
+```{r}
+
+plm1 <- plm(fund ~ homo + cola + gun + rac + abor*gender + realrinc_1000s, index = c("idnum", "panelwave"),  model = "fd", data = sub)
+          
+summary(plm1)
+
+clusterSE(fit = plm1, cluster.var = "idnum", data=sub)
+
+## The results for this regression are quite different from those above. No coefficients appear statistically significant. As an interviewer is more in favor of a homosexual teaching a class in a college or university, an interviewer's score for fundamentalism/liberalism of religion increases by .04 percentage points (less moderate/liberal). As an interviewer is more in favor of a law which would require a person to obtain a police permit before he or she could buy a gun, an interviewer's score for fundamentalism/liberalism of religion decreases by .05 percentage points (more moderate/liberal). As an interviewer is more in favor of a law that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to (negroes/blacks/African-Americans), an interviewer's score for fundamentalism/liberalism of religion decreases by .03 percentage points (more moderate/liberal).
+
+## Accouting for the clustered standard errors which accounts for the lack of dependence assumed by the naive OLS regression method, the coefficients across the variables remain unchanged. T-values across the variables decline slightly. 
+
+```
