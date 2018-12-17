@@ -1,5 +1,5 @@
 ---
-title: 'Final_Project'
+title: 'DA_FP'
 author: "Nashrah Ahmed"
 date: "December 6, 2017"
 output: html_document
@@ -39,12 +39,12 @@ sd__colhomo <- median(sub$fund)
 sd__colhomo
 sd_abpoor <- nrow(sub$abpoor)
 sd_gunlaw <- nrow(sub$gunlaw)
-sd_realrinc <- nrow(sub$realrinc_1000s)
+sd_realrinc <- count(sub, "realrinc_1000s")
+#sd_realrinc <- nrow(sub$realrinc_1000s)
 sd_racopen <- nrow(sub$racopen)
 
-sd <- cbind(sd_colath, sd__colhomo, sd_abpoor, sd_gunlaw, sd_racopen, sd_realinc)
+sd <- cbind(sd_colath, sd__colhomo, sd_abpoor, sd_gunlaw, sd_racopen, sd_realrinc)
 sd1 <- as.data.frame(sd) 
-sd1
 ```
 
 ```{r}
@@ -54,10 +54,10 @@ cbind(mean, median, sd, max)
 round(cbind(mean, median, sd, max),digits=1)
 t1 <- round(cbind(mean, median, sd, max),digits=1)
 t1
+
 ```
 
 ```{r}
-pd$colath
 pd.sub$homo = ifelse(pd.sub$colhomo==4, 1, 2) ## interviewer favors a homosexual teaching a class in a college or univ
 
 ##COLATH_1: There are always some people whose ideas are considered bad or dangerous by other people. For instance, somebody who is against all churches and religion . . . B. Should such a person be allowed to teach in a college or university, or not?
@@ -74,16 +74,17 @@ pd.sub$homo = ifelse(pd.sub$colhomo==4, 1, 2) ## interviewer favors a homosexual
 
 ## RACOPEN: Suppose there is a community-wide vote on the general housing issue. There are two possible laws to vote on: a. One law says that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to (negroes/blacks/African-Americans). b. The second law says that a homeowner cannot refuse to sell to someone because of their race or color. Which law would you vote for?
 ## 1: OWNER DECIDES & 2: CANT DISCRIMINATE & 3: NEITHER
-```
 
-```{r}
 vars <- c("idnum", "fund","panelwave","gunlaw","colhomo", "racopen")
 pd.sub <- pd[, vars]
+
 pd.sub$homo = ifelse(pd.sub$colhomo==4, 1, 2) ## interviewer favors a homosexual teaching a class in a college or univ
+
 pd.sub$year= ifelse(pd.sub$panelwave==3, 1, 0)
+
 ```
 
-## 1. Run a naive ("pooled") OLS regression on the panel data. Tell we how you expect your Xs to affect your Y and why. Apply clustered standard errors too. Interpret your results.
+## 1. Run a naive ("pooled") OLS regression on the panel data.  Tell we how you expect your Xs to affect your Y and why.  Apply clustered standard errors too.  Interpret your results.
 ```{r}
 sub$realrinc_1000s <- (sub$realrinc)/1000 
 sub$abor <- ifelse(sub$abpoor==1, 1, 0) #1 = yes
@@ -111,10 +112,11 @@ summary(lm1)
 
 # Based on the results from the multivariate naive “pooled” OLS regression above, an individual that beleieves homosexuals should be allowed to teach in a college or university scores .185** higher on the religiousness scale, indicating more moderate/liberal beleiefs. An individual that beleieve somebody who is against all churches and religion should be allowed to teach in a college or university scores .144*** higher on the religiousness scale, indicating more moderate/liberal beleiefs. An individual that favors a law which would require a person to obtain a police permit before he or she could buy a gun scores .085(.) higher on the religiousness scale, indicating more moderate/liberal beleiefs. An individual that would vote for a law says that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to African Americans scores .006 lower on the religiousness scale, indicating more funamentalist beliefs. Lastly, an individual that beleives it should be possible for a pregnant woman to obtain a legal abortion if the family has a very low income and cannot afford any more children scores .321 higher on the religiousness scale, indicating more moderate/liberal beleiefs. The results largely align with expectations and make intuitive sense given the general stance of society over time. 
 
+
+
 ## Here, I am measuring the relationship between a respondent's level of religiousness (fundamentalist vs moderate vs liberal) and favorability for homosexuals teaching classes, gun laws, and one aspect of discrimination (see detailed descriptions of variables above) via a naive ("pooled") OLS regression on the panel data.
 
 ## As an interviewer is more in favor of a homosexual teaching a class in a college or university, an interviewer's score for fundamentalism/liberalism of religion decreases by .35*** percentage points (more moderate/liberal). As an interviewer is more in favor of a law which would require a person to obtain a police permit before he or she could buy a gun, an interviewer's score for fundamentalism/liberalism of religion decreases by .06 percentage points (more moderate/liberal). As an interviewer is more in favor of a law that a homeowner can decide for himself whom to sell his house to, even if he prefers not to sell to (negroes/blacks/African-Americans), an interviewer's score for fundamentalism/liberalism of religion decreases by .01 percentage points (more moderate/liberal).
-
 ```
 
 ## Clustered Standard Errors
